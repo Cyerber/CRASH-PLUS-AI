@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>CrashPulse AI V10.1 — Scanner + Auto-Trader</title>
+<style>
+:root{--bg:#071018;--panel:#0d1822;--panel2:#101f2b;--line:#1c3342;--text:#eaf4f8;--muted:#8fa7b4;--good:#36e39a;--bad:#ff6574;--warn:#ffd166;--blue:#55b8ff}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#061019,#09131b);color:var(--text);font:14px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{padding:18px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#071018ee;backdrop-filter:blur(10px);z-index:5}
+h1{margin:0;font-size:22px}.sub{color:var(--muted);margin-top:4px}
+.wrap{max-width:1200px;margin:auto;padding:14px}.grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}@media(max-width:850px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 10px 30px #0002;margin-bottom:14px}
+.title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-weight:700}
+.row{display:flex;gap:8px;flex-wrap:wrap}.pill{padding:6px 9px;border:1px solid var(--line);border-radius:999px;color:var(--muted)}
+.pill.good{color:var(--good);border-color:#1c6a4d}.pill.bad{color:var(--bad);border-color:#71323b}.pill.warn{color:var(--warn);border-color:#725e27}
+label{display:block;color:var(--muted);font-size:12px;margin:8px 0 5px}input,select{width:100%;background:#09151e;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:10px;outline:none}
+button{border:0;border-radius:9px;padding:10px 13px;font-weight:700;cursor:pointer;background:#173246;color:var(--text)}button.primary{background:#15734f}button.danger{background:#8b303b}button:disabled{opacity:.45;cursor:not-allowed}
+.statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}@media(max-width:600px){.statgrid{grid-template-columns:repeat(2,1fr)}}
+.stat{background:var(--panel2);border:1px solid var(--line);padding:12px;border-radius:10px}.stat b{display:block;font-size:20px;margin-top:3px}.small{font-size:12px;color:var(--muted)}
+.signal{border:1px solid var(--line);border-radius:12px;padding:14px;background:linear-gradient(145deg,#0e1c27,#0b1720)}
+.signal .big{font-size:27px;font-weight:800}.score{font-size:40px;font-weight:900}.good{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--warn)}.blue{color:var(--blue)}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:9px;border-bottom:1px solid var(--line);font-size:12px}th{color:var(--muted)}
+.log{max-height:260px;overflow:auto;font:12px ui-monospace,monospace;white-space:pre-wrap;background:#050d13;padding:10px;border-radius:9px}
+canvas{width:100%;height:230px;background:#071119;border:1px solid var(--line);border-radius:10px}
+.notice{padding:10px;border-radius:9px;background:#13202a;color:var(--muted);line-height:1.5}.dangerbox{border:1px solid #74333c;background:#251116}.greenbox{border:1px solid #1d624a;background:#0c2119}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<header><div class="wrap" style="padding:0">
+<h1>⚡ CrashPulse AI V10.1</h1><div class="sub">Live scanner • Deriv execution engine • risk-controlled auto-trading</div>
+<div class="row" style="margin-top:10px"><span id="conn" class="pill">Scanner: OFFLINE</span><span id="tradeConn" class="pill">Trading: OFFLINE</span><span id="mode" class="pill warn">DEMO LOCK</span></div>
+</div></header>
+
+<div class="wrap">
+<div class="card">
+<div class="title">1. Scanner controls <span class="small">Heuristic signal — not a guaranteed probability</span></div>
+<div class="row">
+<div style="flex:1;min-width:180px"><label>Market</label><select id="market"><option>Loading live symbols…</option></select></div>
+<div style="width:150px"><label>Min score</label><input id="minScore" type="number" min="50" max="99" value="82"></div>
+<div style="width:150px"><label>Cooldown (sec)</label><input id="cooldown" type="number" min="0" value="30"></div>
+</div>
+<div class="row" style="margin-top:10px"><button class="primary" id="startScan">Start Scanner</button><button id="stopScan">Stop Scanner</button><button id="refreshSymbols">Refresh Symbols</button></div>
+</div>
+
+<div class="grid">
+<div>
+<div class="card">
+<div class="title">Live signal</div>
+<div class="signal">
+<div class="small">CURRENT SETUP</div>
+<div id="signalText" class="big">WAITING FOR LIVE DATA</div>
+<div class="row" style="align-items:center;margin-top:8px"><div id="score" class="score">—</div><div><div id="reason">Connect scanner to begin.</div><div id="price" class="small">Price: —</div></div></div>
+<div class="row" style="margin-top:10px"><span id="direction" class="pill">Direction: —</span><span id="event" class="pill">Event pressure: —</span><span id="ticks" class="pill">Ticks: 0</span></div>
+</div>
+</div>
+
+<div class="card">
+<div class="title">Price / signal chart</div><canvas id="chart" width="900" height="230"></canvas>
+</div>
+
+<div class="card">
+<div class="title">Scanner ranking</div>
+<table><thead><tr><th>Market</th><th>Price</th><th>Bias</th><th>Score</th></tr></thead><tbody id="ranking"><tr><td colspan="4">Waiting…</td></tr></tbody></table>
+</div>
+</div>
+
+<div>
+<div class="card">
+<div class="title">2. Auto-trader risk engine</div>
+<div class="row">
+<div style="flex:1"><label>Stake (USD)</label><input id="stake" type="number" min="0.35" step="0.01" value="1"></div>
+<div style="flex:1"><label>Daily target (USD)</label><input id="target" type="number" min="1" step="1" value="100"></div>
+<div style="flex:1"><label>Daily max loss (USD)</label><input id="maxLoss" type="number" min="1" step="1" value="30"></div>
+</div>
+<div class="row">
+<div style="flex:1"><label>Duration (seconds)</label><input id="duration" type="number" min="1" step="1" value="5"></div>
+<div style="flex:1"><label>Max trades/day</label><input id="maxTrades" type="number" min="1" value="25"></div>
+</div>
+<div class="row" style="margin-top:10px"><button id="paper" class="primary">Paper Auto: OFF</button><button id="live" class="danger">LIVE Auto: OFF</button></div>
+<div class="notice" style="margin-top:10px">Safety defaults: one open trade, no martingale, daily stop, cooldown, proposal validation, and no token storage.</div>
+</div>
+
+<div class="card">
+<div class="title">3. Deriv authentication</div>
+<label>Deriv App ID</label><input id="appId" placeholder="Your Deriv App ID">
+<label>Account ID</label><input id="accountId" placeholder="Demo account ID">
+<label>Personal Access Token</label><input id="pat" type="password" placeholder="Enter locally — never send it in chat">
+<div class="row" style="margin-top:10px"><button class="primary" id="connectTrade">Connect Trading</button><button id="disconnectTrade">Disconnect</button></div>
+<div class="small" style="margin-top:8px">The browser uses your PAT only to request Deriv's short-lived authenticated WebSocket URL. It is not saved by this page.</div>
+</div>
+
+<div class="card">
+<div class="title">Account / session</div>
+<div class="statgrid">
+<div class="stat"><span class="small">Daily P/L</span><b id="pl">$0.00</b></div>
+<div class="stat"><span class="small">Trades</span><b id="tradeCount">0</b></div>
+<div class="stat"><span class="small">Wins</span><b id="wins">0</b></div>
+<div class="stat"><span class="small">Losses</span><b id="losses">0</b></div>
+</div>
+<div class="row" style="margin-top:9px"><span id="openState" class="pill">No open trade</span><span id="targetState" class="pill">Target active</span></div>
+</div>
+</div>
+</div>
+
+<div class="card">
+<div class="title">Execution log</div>
+<div id="log" class="log">CrashPulse V10.1 initialized.
+Demo/paper trading is the recommended first test.</div>
+</div>
+</div>
+
+<script>
+/* CrashPulse AI V10.1
+   - Public market data: wss://api.derivws.com/trading/v1/options/ws/public
+   - Auth: REST OTP -> authenticated demo/real WebSocket
+   - Uses current API field names such as underlying_symbol.
+*/
+const PUBLIC_WS="wss://api.derivws.com/trading/v1/options/ws/public";
+let pub=null, tradeWS=null, symbols=[], markets=[], histories=new Map(), activeMarket=null;
+let scanning=false, paperAuto=false, liveAuto=false, openTrade=null, proposalPending=false, cooldownUntil=0;
+let stats={pl:0,trades:0,wins:0,losses:0};
+const $=id=>document.getElementById(id);
+const log=(s)=>{ $("log").textContent += "\\n["+new Date().toLocaleTimeString()+"] "+s; $("log").scrollTop=$("log").scrollHeight; };
+function num(x){const n=Number(x);return Number.isFinite(n)?n:0}
+function money(x){return "$"+num(x).toFixed(2)}
+function setPill(id,text,cls=""){const e=$(id);e.textContent=text;e.className="pill "+cls}
+function saveStats(){localStorage.setItem("cpv101_stats",JSON.stringify(stats))}
+function loadStats(){try{const x=JSON.parse(localStorage.getItem("cpv101_stats")||"null");if(x)stats=x}catch{};renderStats()}
+function renderStats(){$("pl").textContent=money(stats.pl);$("tradeCount").textContent=stats.trades;$("wins").textContent=stats.wins;$("losses").textContent=stats.losses;
+  $("pl").className=stats.pl>=0?"good":"bad";
+  $("targetState").textContent=stats.pl>=num($("target").value)?"TARGET HIT":"Target: "+money(num($("target").value)-stats.pl);
+  $("targetState").className=stats.pl>=num($("target").value)?"pill good":"pill";
+}
+function wsSend(ws,obj){if(ws&&ws.readyState===1)ws.send(JSON.stringify(obj));}
+function connectPublic(){
+  if(pub)try{pub.close()}catch{}
+  pub=new WebSocket(PUBLIC_WS);
+  pub.onopen=()=>{setPill("conn","Scanner: ONLINE","good"); log("Public market stream connected."); requestSymbols();}
+  pub.onclose=()=>{setPill("conn","Scanner: OFFLINE","bad"); if(scanning)setTimeout(connectPublic,2500)}
+  pub.onerror=()=>setPill("conn","Scanner: ERROR","bad");
+  pub.onmessage=e=>handlePublic(JSON.parse(e.data));
+}
+function requestSymbols(){wsSend(pub,{active_symbols:"brief",contract_type:["CALL","PUT"],req_id:101})}
+function handlePublic(d){
+  if(d.error){log("Market API: "+(d.error.message||"error"));return}
+  if(d.msg_type==="active_symbols"){ 
+    symbols=(d.active_symbols||[]).filter(s=>/crash|jump|skew/i.test((s.underlying_symbol_name||"")+" "+(s.underlying_symbol||"")));
+    markets=symbols.filter(s=>!s.is_trading_suspended);
+    populateMarkets(); log("Found "+markets.length+" active Crash/Jump/Skew symbols supporting CALL/PUT.");
+    if(markets.length)selectMarket(markets[0].underlying_symbol);
+  }
+  if(d.msg_type==="tick"){handleTick(d.tick)}
+}
+function populateMarkets(){
+  $("market").innerHTML=markets.length?markets.map(s=>`<option value="${s.underlying_symbol}">${s.underlying_symbol_name||s.underlying_symbol} (${s.underlying_symbol})</option>`).join(""):"<option>No matching CALL/PUT markets</option>";
+}
+function selectMarket(sym){
+  activeMarket=markets.find(x=>x.underlying_symbol===sym)||markets[0]; if(!activeMarket)return;
+  $("market").value=activeMarket.underlying_symbol;
+  histories.set(activeMarket.underlying_symbol,[]);
+  wsSend(pub,{forget_all:"ticks"});
+  wsSend(pub,{ticks:activeMarket.underlying_symbol,subscribe:1,req_id:102});
+  log("Subscribed to "+(activeMarket.underlying_symbol_name||activeMarket.underlying_symbol));
+}
+$("market").onchange=e=>selectMarket(e.target.value);
+
+function startScanner(){scanning=true;if(!pub||pub.readyState!==1)connectPublic();else requestSymbols();$("signalText").textContent="SCANNING";log("Scanner started.");}
+function stopScanner(){scanning=false; if(pub)try{pub.close()}catch{} setPill("conn","Scanner: OFFLINE","warn");$("signalText").textContent="SCANNER STOPPED";log("Scanner stopped.");}
+$("startScan").onclick=startScanner;$("stopScan").onclick=stopScanner;$("refreshSymbols").onclick=requestSymbols;
+
+function handleTick(t){
+  if(!activeMarket||t.symbol!==activeMarket.underlying_symbol)return;
+  const h=histories.get(t.symbol)||[]; const p=num(t.quote); h.push({p,t:num(t.epoch)}); if(h.length>120)h.shift(); histories.set(t.symbol,h);
+  $("price").textContent="Price: "+p;
+  $("ticks").textContent="Ticks: "+h.length;
+  drawChart(h);
+  const sig=score(activeMarket,h); renderSignal(sig);
+  if(scanning && sig.score>=num($("minScore").value) && Date.now()>cooldownUntil && !openTrade && !proposalPending){
+    maybeTrade(sig);
+  }
+}
+function score(sym,h){
+  if(h.length<25)return {score:0,bias:"WAIT",reason:"Collecting ticks…",event:"—"};
+  const ps=h.map(x=>x.p), n=ps.length, last=ps[n-1], a=ps[n-2], b=ps[Math.max(0,n-6)], c=ps[Math.max(0,n-16)];
+  const short=(last-b)/Math.max(Math.abs(b),1e-12), medium=(last-c)/Math.max(Math.abs(c),1e-12);
+  const returns=[]; for(let i=Math.max(1,n-30);i<n;i++)returns.push((ps[i]-ps[i-1])/Math.max(Math.abs(ps[i-1]),1e-12));
+  const vol=Math.sqrt(returns.reduce((s,x)=>s+x*x,0)/Math.max(1,returns.length));
+  const name=(sym.underlying_symbol_name||sym.underlying_symbol||"").toLowerCase();
+  let direction="WAIT", raw=50, reason="No clean setup", event="Normal";
+  if(name.includes("crash")){
+    const run=Math.max(0,short)*10000;
+    const accel=((last-a)-(a-b))/Math.max(Math.abs(last),1e-12)*10000;
+    raw=50+Math.min(30,run)+Math.min(15,Math.max(0,accel));
+    if(raw>=70){direction="PUT";event="Crash-pressure";reason="Short-term upward extension detected; scanner is watching for a downside contract setup."}
+  }else if(name.includes("jump")){
+    const drop=Math.max(0,-short)*10000;
+    const accel=((last-a)-(a-b))/Math.max(Math.abs(last),1e-12)*10000;
+    raw=50+Math.min(30,drop)+Math.min(15,Math.max(0,-accel));
+    if(raw>=70){direction="CALL";event="Jump-pressure";reason="Short-term downward extension detected; scanner is watching for an upside contract setup."}
+  }else{
+    const trend=medium*10000;
+    raw=50+Math.min(20,Math.abs(trend));
+    if(trend>1.2){direction="CALL";reason="Positive short-term trend pressure."}
+    else if(trend<-1.2){direction="PUT";reason="Negative short-term trend pressure."}
+  }
+  const stability=Math.max(0,1-Math.min(1,vol*5000));
+  raw += stability*8;
+  return {score:Math.round(Math.max(0,Math.min(99,raw))),bias:direction,reason,event};
+}
+function renderSignal(s){
+  $("score").textContent=s.score;
+  $("signalText").textContent=s.bias==="WAIT"?"WAIT":(s.bias+" SETUP");
+  $("reason").textContent=s.reason;
+  $("direction").textContent="Direction: "+s.bias;
+  $("direction").className="pill "+(s.bias==="WAIT"?"warn":"good");
+  $("event").textContent="Event pressure: "+s.event;
+  $("score").className="score "+(s.score>=num($("minScore").value)?"good":s.score>=65?"warn":"bad");
+  renderRanking(s);
+}
+function renderRanking(current){
+  const rows=markets.slice(0,12).map(s=>{
+    const h=histories.get(s.underlying_symbol)||[];
+    const x=score(s,h);
+    return {s,x,p:h.length?h[h.length-1].p:0}
+  }).sort((a,b)=>b.x.score-a.x.score);
+  $("ranking").innerHTML=rows.map(r=>`<tr><td>${r.s.underlying_symbol_name||r.s.underlying_symbol}</td><td>${r.p?num(r.p):"—"}</td><td class="${r.x.bias==="WAIT"?"warn":"good"}">${r.x.bias}</td><td>${r.x.score}</td></tr>`).join("")||"<tr><td colspan=4>Waiting…</td></tr>";
+}
+function drawChart(h){
+  const c=$("chart"),ctx=c.getContext("2d"),w=c.width,hgt=c.height;ctx.clearRect(0,0,w,hgt);
+  if(h.length<2)return; const ps=h.slice(-80).map(x=>x.p),min=Math.min(...ps),max=Math.max(...ps),range=max-min||1;
+  ctx.beginPath(); ps.forEach((p,i)=>{const x=i*(w-20)/(ps.length-1)+10,y=hgt-10-(p-min)/range*(hgt-20);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.strokeStyle="#55b8ff";ctx.lineWidth=2;ctx.stroke();
+}
+async function maybeTrade(sig){
+  if(!sig||sig.bias==="WAIT")return;
+  if(stats.pl>=num($("target").value)||stats.pl<=-Math.abs(num($("maxLoss").value))||stats.trades>=num($("maxTrades").value))return;
+  proposalPending=true; cooldownUntil=Date.now()+Math.max(0,num($("cooldown").value))*1000;
+  const symbol=activeMarket.underlying_symbol, stake=num($("stake").value), duration=Math.max(1,num($("duration").value));
+  log(`SETUP CONFIRMED: ${symbol} ${sig.bias} score=${sig.score}`);
+  if(paperAuto){paperTrade(symbol,sig,duration,stake);proposalPending=false;return}
+  if(!liveAuto){proposalPending=false;return}
+  if(!tradeWS||tradeWS.readyState!==1){log("LIVE AUTO blocked: trading connection is not ready.");proposalPending=false;return}
+  requestProposal(symbol,sig.bias,stake,duration);
+}
+function paperTrade(symbol,sig,duration,stake){
+  stats.trades++;renderStats();$("openState").textContent="Paper trade active";$("openState").className="pill warn";
+  log(`PAPER BUY: ${symbol} ${sig.bias} $${stake.toFixed(2)} ${duration}s`);
+  setTimeout(()=>{const h=histories.get(symbol)||[];const last=h.length?h[h.length-1].p:0;const future=h.slice(-Math.min(h.length,Math.max(3,duration+2))).map(x=>x.p);
+    let move=future.length?future[future.length-1]-future[0]:0; const win=(sig.bias==="CALL"?move>0:move<0);
+    const pnl=win?stake*.8:-stake; stats.pl+=pnl; win?stats.wins++:stats.losses++;$("openState").textContent="No open trade";$("openState").className="pill";renderStats();saveStats();log(`PAPER RESULT: ${win?"WIN":"LOSS"} ${money(pnl)}`);
+  },Math.max(1000,duration*1000));
+}
+function requestProposal(symbol,type,stake,duration){
+  const req={proposal:1,amount:stake,basis:"stake",contract_type:type,currency:"USD",duration:duration,duration_unit:"s",underlying_symbol:symbol,req_id:7001};
+  wsSend(tradeWS,req);log(`PROPOSAL REQUEST: ${type} ${symbol} stake=${stake} duration=${duration}s`);
+}
+async function connectTrading(){
+  const app=$("appId").value.trim(),acct=$("accountId").value.trim(),pat=$("pat").value.trim();
+  if(!app||!acct||!pat){alert("Enter your Deriv App ID, account ID and PAT locally. Do not send the token to chat.");return}
+  try{
+    setPill("tradeConn","Trading: AUTHENTICATING","warn");
+    const r=await fetch(`https://api.derivws.com/trading/v1/options/accounts/${encodeURIComponent(acct)}/otp`,{method:"POST",headers:{"Authorization":"Bearer "+pat,"Deriv-App-ID":app}});
+    const j=await r.json(); if(!r.ok||!j.data?.url)throw new Error(j.errors?.[0]?.message||"OTP failed");
+    tradeWS=new WebSocket(j.data.url);
+    tradeWS.onopen=()=>{setPill("tradeConn","Trading: CONNECTED","good");$("mode").textContent=j.data.url.includes("/real")?"REAL CONNECTED":"DEMO CONNECTED";$("mode").className="pill "+(j.data.url.includes("/real")?"bad":"good");log("Authenticated trading WebSocket connected.");wsSend(tradeWS,{balance:1,subscribe:1,req_id:8001})}
+    tradeWS.onclose=()=>{setPill("tradeConn","Trading: OFFLINE","bad");log("Trading WebSocket closed.");liveAuto=false;setLiveButton()}
+    tradeWS.onerror=()=>setPill("tradeConn","Trading: ERROR","bad");
+    tradeWS.onmessage=e=>handleTrade(JSON.parse(e.data));
+  }catch(err){setPill("tradeConn","Trading: ERROR","bad");log("Trading auth error: "+err.message);alert(err.message)}
+}
+function handleTrade(d){
+  if(d.error){proposalPending=false;log("TRADE ERROR: "+(d.error.message||"error"));return}
+  if(d.msg_type==="balance"){log("Balance: "+money(d.balance?.balance));return}
+  if(d.msg_type==="proposal"){
+    const p=d.proposal||{};const ask=num(p.ask_price), payout=num(p.payout);
+    if(!p.id||!ask||ask>num($("stake").value)*1.03){proposalPending=false;log("Proposal rejected by price filter.");return}
+    if(payout<=ask){proposalPending=false;log("Proposal rejected: payout does not exceed ask price.");return}
+    log(`PROPOSAL ACCEPTED: ask=${money(ask)} payout=${money(payout)}. BUYING…`);
+    wsSend(tradeWS,{buy:p.id,price:ask,req_id:7002});
+  }
+  if(d.msg_type==="buy"){
+    const b=d.buy||{};openTrade={id:b.contract_id,buyPrice:num(b.buy_price)};stats.trades++;proposalPending=false;
+    $("openState").textContent="LIVE TRADE ACTIVE";$("openState").className="pill good";renderStats();
+    log(`LIVE BUY CONFIRMED: contract ${b.contract_id}`);
+    wsSend(tradeWS,{proposal_open_contract:1,contract_id:b.contract_id,subscribe:1,req_id:7003});
+  }
+  if(d.msg_type==="proposal_open_contract"){
+    const c=d.proposal_open_contract||{};if(!openTrade||String(c.contract_id)!==String(openTrade.id))return;
+    const pnl=num(c.profit); $("openState").textContent="LIVE ACTIVE • P/L "+money(pnl);
+    if(c.is_sold||c.status==="sold"||c.status==="won"||c.status==="lost"){
+      stats.pl+=pnl;if(pnl>0)stats.wins++;else if(pnl<0)stats.losses++;
+      log(`LIVE RESULT: ${pnl>0?"WIN":"LOSS"} ${money(pnl)}`);
+      openTrade=null;$("openState").textContent="No open trade";$("openState").className="pill";renderStats();saveStats();
+      if(stats.pl>=num($("target").value)||stats.pl<=-Math.abs(num($("maxLoss").value))){liveAuto=false;setLiveButton();log("DAILY STOP TRIGGERED.");}
+    }
+  }
+}
+function setPaperButton(){$("paper").textContent="Paper Auto: "+(paperAuto?"ON":"OFF");$("paper").className=paperAuto?"primary":""}
+function setLiveButton(){$("live").textContent="LIVE Auto: "+(liveAuto?"ON":"OFF");$("live").className=liveAuto?"danger":""}
+$("paper").onclick=()=>{paperAuto=!paperAuto;if(paperAuto){liveAuto=false;setLiveButton()}setPaperButton();log("Paper auto-trader "+(paperAuto?"ENABLED":"DISABLED"));};
+$("live").onclick=()=>{if(!tradeWS||tradeWS.readyState!==1){alert("Connect the Deriv trading account first.");return} if(stats.pl>=num($("target").value)||stats.pl<=-Math.abs(num($("maxLoss").value))){alert("Daily risk stop is active.");return} liveAuto=!liveAuto;if(liveAuto)paperAuto=false;setPaperButton();setLiveButton();log("LIVE auto-trader "+(liveAuto?"ENABLED":"DISABLED"));};
+$("connectTrade").onclick=connectTrading;
+$("disconnectTrade").onclick=()=>{liveAuto=false;if(tradeWS)try{tradeWS.close()}catch{}setLiveButton();setPill("tradeConn","Trading: OFFLINE","warn");};
+loadStats();connectPublic();startScanner();
+</script>
+</body>
+</html>

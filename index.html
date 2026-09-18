@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>CrashPulse AI — Multi-Market Deriv Scanner</title>
+<style>
+:root{--bg:#07101a;--panel:#0d1824;--panel2:#101e2b;--line:#203448;--text:#e8f0f8;--muted:#8fa2b6;--blue:#3197ff;--green:#20d987;--red:#ff5268;--orange:#ffb52e;--purple:#a96cff}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#050c14,#0a1420);color:var(--text);font:15px Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input{font:inherit}.app{max-width:1500px;margin:auto;padding:14px}
+header{display:flex;align-items:center;gap:14px;padding:10px 6px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.logo{font-size:27px;font-weight:850;letter-spacing:-1px}.logo span{color:var(--blue)}.status{margin-left:auto;border:1px solid #176844;background:#082619;border-radius:12px;padding:10px 14px;color:var(--green);font-weight:750}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--green);margin-right:7px}.dot.off{background:var(--red)}
+nav{display:flex;gap:7px;padding:12px 0;overflow:auto}.nav{border:1px solid var(--line);background:transparent;color:var(--muted);padding:10px 17px;border-radius:9px}.nav.active{background:#0b5fd7;color:#fff}
+.layout{display:grid;grid-template-columns:255px minmax(0,1fr) 260px;gap:14px}.card{background:linear-gradient(180deg,#0e1925,#0c1722);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 10px 30px #0003}.markets{min-height:700px}.search{width:100%;background:#08131e;border:1px solid #284056;color:white;border-radius:10px;padding:11px;margin:8px 0 12px}.tabs{display:flex;gap:5px;overflow:auto;margin-bottom:10px}.tab{white-space:nowrap;border:1px solid var(--line);background:#0a1520;color:var(--muted);padding:7px 10px;border-radius:8px}.tab.sel{background:#1167e8;color:white}
+.market{width:100%;text-align:left;background:#0a1520;border:1px solid #1e354a;color:#dce8f3;border-radius:11px;padding:11px;margin:5px 0;cursor:pointer}.market:hover,.market.selected{border-color:#197cff;box-shadow:inset 3px 0 #197cff}.mname{font-weight:750}.meta{font-size:11px;color:var(--muted);margin-top:5px}.live{color:var(--green)}
+.main{min-width:0}.hero{display:grid;grid-template-columns:1fr auto;gap:12px}.title{font-size:23px;font-weight:800}.price{font-size:27px;font-weight:850;margin-top:8px}.up{color:var(--green)}.down{color:var(--red)}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}.metric{background:#09141f;border:1px solid #1e3448;border-radius:11px;padding:10px}.metric b{display:block;font-size:17px;margin-top:4px}.label{color:var(--muted);font-size:12px}
+.chartbox{margin-top:12px;padding:10px}.charthead{display:flex;justify-content:space-between;color:var(--muted);margin-bottom:5px}.chart{height:390px;width:100%;display:block;background:#07111b;border-radius:10px}
+.signal{font-size:36px;font-weight:900;text-align:center;padding:13px;border-radius:12px;background:#09141f;margin-top:8px}.wait{color:var(--orange)}.long{color:var(--green)}.short{color:var(--red)}
+.bar{height:8px;background:#17293a;border-radius:8px;overflow:hidden;margin:6px 0 13px}.fill{height:100%;border-radius:8px}.blue{background:var(--blue)}.green{background:var(--green)}.red{background:var(--red)}.purple{background:var(--purple)}.orange{background:var(--orange)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.act{padding:13px;border:0;border-radius:10px;font-weight:850;color:white}.longbtn{background:#078d58}.shortbtn{background:#b82f48}.paper{background:#132333;border:1px solid #294257}
+.bottom{display:grid;grid-template-columns:1.1fr 1.1fr 1fr;gap:12px;margin-top:12px}.log{height:190px;overflow:auto;font-family:ui-monospace,monospace;color:#b8c8d8;font-size:12px;line-height:1.55}.row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #182b3d}.empty{color:var(--muted);text-align:center;padding:25px}
+@media(max-width:1100px){.layout{grid-template-columns:220px 1fr}.right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px}.right .card{height:100%}.bottom{grid-template-columns:1fr 1fr}.bottom .card:last-child{grid-column:1/-1}}
+@media(max-width:760px){.app{padding:8px}.layout{display:block}.markets{min-height:0;margin-bottom:10px}.market-list{display:flex;overflow:auto;gap:6px}.market{min-width:180px}.metrics{grid-template-columns:repeat(2,1fr)}.hero{grid-template-columns:1fr}.chart{height:300px}.right{display:block}.bottom{grid-template-columns:1fr}.bottom .card:last-child{grid-column:auto}.logo{font-size:22px}.status{margin-left:0}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="logo">◉ CrashPulse <span>AI</span></div>
+  <div style="color:var(--muted)">Multi-Market Deriv Scanner</div>
+  <div class="status" id="status"><span class="dot off"></span>Connecting…</div>
+</header>
+<nav><button class="nav active">Scanner</button><button class="nav">Markets</button><button class="nav">Charts</button><button class="nav">Signals</button><button class="nav">Trade Log</button></nav>
+
+<div class="layout">
+<aside class="card markets">
+  <b style="font-size:18px">Deriv Markets</b>
+  <input class="search" id="search" placeholder="Search markets…">
+  <div class="tabs" id="tabs"></div>
+  <div class="market-list" id="marketList"><div class="empty">Loading active symbols…</div></div>
+</aside>
+
+<main class="main">
+<section class="card">
+  <div class="hero">
+    <div><div class="title" id="marketName">Waiting for Deriv market…</div><div class="meta" id="symbolText">No live symbol selected</div><div class="price" id="price">—</div></div>
+    <div style="text-align:right"><div class="label">Live feed</div><div id="tickState" class="live">Waiting…</div></div>
+  </div>
+  <div class="metrics">
+    <div class="metric"><span class="label">Last Tick</span><b id="lastTick">—</b></div>
+    <div class="metric"><span class="label">Ticks</span><b id="tickCount">0</b></div>
+    <div class="metric"><span class="label">Window</span><b id="window">0 / 100</b></div>
+    <div class="metric"><span class="label">Data Age</span><b id="age">—</b></div>
+  </div>
+  <div class="card chartbox">
+    <div class="charthead"><span id="chartTitle">Live tick chart</span><span id="change">—</span></div>
+    <canvas id="chart" class="chart"></canvas>
+  </div>
+</section>
+
+<div class="bottom">
+<section class="card"><b>Market Overview</b><div style="margin-top:12px" id="overview">Select a market to begin.</div></section>
+<section class="card"><b>Live Data Feed</b><div class="log" id="feed">No ticks received yet.</div></section>
+<section class="card"><b>Recent Signals</b><div id="signals"><div class="empty">Signals appear only after live ticks are available.</div></div></section>
+</div>
+</main>
+
+<aside class="right">
+<section class="card">
+  <b>Signal</b>
+  <div class="signal wait" id="signal">WAIT</div>
+  <div style="text-align:center;color:var(--muted)" id="confidence">Waiting for 30+ live ticks</div>
+  <hr style="border:0;border-top:1px solid var(--line);margin:15px 0">
+  <b>Signal Analysis</b>
+  <p class="label">Trend <span id="trendVal" style="float:right">—</span></p><div class="bar"><div id="trendBar" class="fill blue" style="width:0"></div></div>
+  <p class="label">Momentum <span id="momVal" style="float:right">—</span></p><div class="bar"><div id="momBar" class="fill green" style="width:0"></div></div>
+  <p class="label">Volatility <span id="volVal" style="float:right">—</span></p><div class="bar"><div id="volBar" class="fill purple" style="width:0"></div></div>
+  <p class="label">Build-up <span id="buildVal" style="float:right">—</span></p><div class="bar"><div id="buildBar" class="fill orange" style="width:0"></div></div>
+</section>
+<section class="card">
+  <b>Paper Trade</b>
+  <div class="actions"><button class="act longbtn" onclick="paper('LONG')">↑ LONG</button><button class="act shortbtn" onclick="paper('SHORT')">↓ SHORT</button></div>
+  <button class="act paper" style="width:100%;margin-top:8px" onclick="closePaper()">Close paper trade</button>
+  <div id="paper" class="label" style="margin-top:10px">No paper trade.</div>
+</section>
+<section class="card">
+  <b>Scanner status</b>
+  <div class="row"><span>Connection</span><span id="conn2">—</span></div>
+  <div class="row"><span>Live ticks</span><span id="liveTicks">0</span></div>
+  <div class="row"><span>Markets found</span><span id="marketCount">0</span></div>
+</section>
+</aside>
+</div>
+</div>
+
+<script>
+const APP_ID = "1089";
+let ws=null, pingTimer=null, reconnectTimer=null, selected=null, markets=[], prices=[], ticks=0, lastTs=0, paperTrade=null, activeCategory="All";
+const $=id=>document.getElementById(id);
+function log(msg){const el=$("feed"); if(el.textContent==="No ticks received yet.") el.textContent=""; el.innerHTML += `<div>${new Date().toLocaleTimeString()} ${msg}</div>`; el.scrollTop=el.scrollHeight}
+function setStatus(on,msg){$("status").innerHTML=`<span class="dot ${on?'':'off'}"></span>${msg}`;$("conn2").textContent=msg}
+function connect(){
+  clearTimeout(reconnectTimer);
+  try{ws=new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`)}catch(e){retry();return}
+  ws.onopen=()=>{setStatus(true,"DERIV LIVE");log("Connected");ws.send(JSON.stringify({active_symbols:"brief",product_type:"basic"}));clearInterval(pingTimer);pingTimer=setInterval(()=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify({ping:1}))},25000)}
+  ws.onmessage=e=>{let d;try{d=JSON.parse(e.data)}catch{return} if(d.error){log(`<span style="color:var(--red)">API error: ${d.error.message}</span>`); if(d.msg_type==="tick") retry(); return} if(d.msg_type==="active_symbols")loadMarkets(d.active_symbols||[]); if(d.msg_type==="tick")handleTick(d.tick)}
+  ws.onerror=()=>{setStatus(false,"Connection error")}
+  ws.onclose=()=>{setStatus(false,"Reconnecting…");retry()}
+}
+function retry(){clearTimeout(reconnectTimer);reconnectTimer=setTimeout(connect,2500)}
+function loadMarkets(list){
+  const wanted=list.filter(x=>/crash|boom|volatility|jump|skew/i.test(x.display_name||""));
+  const unique=[];const seen=new Set();
+  for(const x of wanted){const sym=x.underlying_symbol||x.symbol;if(!sym||seen.has(sym))continue;seen.add(sym);unique.push({symbol:sym,name:x.display_name||sym,market:x.market||"",submarket:x.submarket||""})}
+  markets=unique; $("marketCount").textContent=markets.length;renderTabs();renderMarkets();
+  if(!selected && markets.length) selectMarket(markets[0]);
+  log(`Found ${markets.length} matching Deriv markets`);
+}
+function cat(m){let n=m.name.toLowerCase();if(n.includes("crash"))return"Crash";if(n.includes("boom"))return"Boom";if(n.includes("volatility"))return"Volatility";if(n.includes("jump"))return"Jump";if(n.includes("skew"))return"Skew";return"Other"}
+function renderTabs(){const cats=["All","Crash","Boom","Volatility","Jump","Skew"];$("tabs").innerHTML=cats.map(c=>`<button class="tab ${activeCategory===c?'sel':''}" onclick="setCat('${c}')">${c}</button>`).join("")}
+function setCat(c){activeCategory=c;renderTabs();renderMarkets()}
+function renderMarkets(){
+  const q=$("search").value.toLowerCase();const arr=markets.filter(m=>(activeCategory==="All"||cat(m)===activeCategory)&&(`${m.name} ${m.symbol}`).toLowerCase().includes(q));
+  $("marketList").innerHTML=arr.length?arr.map(m=>`<button class="market ${selected?.symbol===m.symbol?'selected':''}" onclick="selectMarket(${JSON.stringify(m).replaceAll('"','&quot;')})"><div class="mname">${m.name}</div><div class="meta"><span class="live">● Live-capable</span> · ${m.symbol}</div></button>`).join(""):`<div class="empty">No matching markets.</div>`;
+}
+$("search").oninput=renderMarkets;
+function selectMarket(m){
+  selected=m;prices=[];ticks=0;lastTs=0;$("marketName").textContent=m.name;$("symbolText").textContent=`Deriv • ${m.symbol}`;$("price").textContent="—";$("lastTick").textContent="—";$("tickCount").textContent="0";$("window").textContent="0 / 100";$("age").textContent="—";$("tickState").textContent="Subscribing…";resetSignal();renderMarkets();
+  if(ws&&ws.readyState===1){ws.send(JSON.stringify({forget_all:"ticks"}));ws.send(JSON.stringify({ticks:m.symbol,subscribe:1}));log(`Subscribed to ${m.name} (${m.symbol})`)}
+}
+function handleTick(t){
+  if(!selected || t.symbol!==selected.symbol)return;
+  const p=Number(t.quote);if(!Number.isFinite(p))return;prices.push(p);if(prices.length>500)prices.shift();ticks++;lastTs=Date.now();
+  $("price").textContent=p.toLocaleString(undefined,{maximumFractionDigits:8});$("lastTick").textContent=p.toLocaleString(undefined,{maximumFractionDigits:8});$("tickCount").textContent=ticks;$("liveTicks").textContent=ticks;$("window").textContent=`${Math.min(prices.length,100)} / 100`;$("age").textContent="0s";$("tickState").textContent="Receiving ticks";
+  const first=prices[Math.max(0,prices.length-100)], ch=first?p/first-1:0;$("change").textContent=(ch>=0?"+":"")+ (ch*100).toFixed(3)+"%";$("change").className=ch>=0?"up":"down";
+  log(`Tick ${p.toLocaleString(undefined,{maximumFractionDigits:8})}`);draw();if(prices.length>=30)analyze();
+}
+function resetSignal(){ $("signal").textContent="WAIT";$("signal").className="signal wait";$("confidence").textContent="Waiting for 30+ live ticks";["trend","mom","vol","build"].forEach(x=>{$(x+"Val").textContent="—";$(x+"Bar").style.width="0%"})}
+function analyze(){
+  const n=Math.min(100,prices.length), a=prices.slice(-n), diffs=a.slice(1).map((v,i)=>v-a[i]), avg=diffs.reduce((x,y)=>x+y,0)/(diffs.length||1);
+  const short=a.slice(-10), slow=a.slice(-30), s=short.reduce((x,y)=>x+y,0)/short.length, l=slow.reduce((x,y)=>x+y,0)/slow.length;
+  const range=Math.max(...a)-Math.min(...a)||1, sd=Math.sqrt(diffs.reduce((x,y)=>x+(y-avg)**2,0)/(diffs.length||1)); 
+  const trend=Math.max(0,Math.min(100,50+(s-l)/range*1800)), mom=Math.max(0,Math.min(100,50+avg/(range||1)*2500)), vol=Math.max(0,Math.min(100,sd/(range||1)*5000)), build=Math.max(0,Math.min(100,50+Math.abs(a[a.length-1]-s)/(range||1)*500));
+  let score=(trend-50)*.4+(mom-50)*.35+(build-50)*.15;
+  let sig="WAIT";if(n>=50&&score>15)sig="LONG";if(n>=50&&score<-15)sig="SHORT";let conf=Math.round(Math.min(95,50+Math.abs(score)*1.6));
+  $("signal").textContent=sig;$("signal").className="signal "+sig.toLowerCase();$("confidence").textContent=`Confidence: ${conf}% • Live-tick model`;
+  setMetric("trend",trend);setMetric("mom",mom);setMetric("vol",vol);setMetric("build",build);
+  $("overview").innerHTML=`<div class="row"><span>Trend</span><b class="${s>=l?'up':'down'}">${s>=l?'UP':'DOWN'}</b></div><div class="row"><span>Last 100 ticks</span><b>${n}</b></div><div class="row"><span>Range</span><b>${range.toFixed(5)}</b></div><div class="row"><span>Signal</span><b>${sig}</b></div>`;
+}
+function setMetric(k,v){$(k+"Val").textContent=Math.round(v)+"%";$(k+"Bar").style.width=Math.round(v)+"%"}
+function draw(){
+ const c=$("chart"),r=c.getBoundingClientRect(),d=devicePixelRatio||1;c.width=r.width*d;c.height=r.height*d;const x=c.getContext("2d");x.scale(d,d);const w=r.width,h=r.height;
+ x.clearRect(0,0,w,h);x.strokeStyle="#172b3d";x.lineWidth=1;for(let i=1;i<6;i++){let yy=i*h/6;x.beginPath();x.moveTo(0,yy);x.lineTo(w,yy);x.stroke()}
+ if(prices.length<2)return;const a=prices.slice(-180),mn=Math.min(...a),mx=Math.max(...a),span=mx-mn||1;x.beginPath();a.forEach((p,i)=>{const xx=i*(w/(a.length-1)),yy=h-10-(p-mn)/span*(h-20);i?x.lineTo(xx,yy):x.moveTo(xx,yy)});x.strokeStyle="#45a3ff";x.lineWidth=2;x.stroke();
+}
+function paper(side){if(!selected||prices.length<10)return alert("Wait for live ticks before opening a paper trade.");paperTrade={side,entry:prices.at(-1),symbol:selected.name};$("paper").innerHTML=`Paper <b>${side}</b> ${selected.name}<br>Entry: ${paperTrade.entry}`;log(`Paper ${side} opened at ${paperTrade.entry}`)}
+function closePaper(){if(!paperTrade)return;$("paper").textContent="Paper trade closed at "+prices.at(-1);log(`Paper ${paperTrade.side} closed at ${prices.at(-1)}`);paperTrade=null}
+setInterval(()=>{if(lastTs){const sec=Math.floor((Date.now()-lastTs)/1000);$("age").textContent=sec+"s";if(sec>5)$("tickState").textContent="Feed delayed"}} ,1000);
+window.addEventListener("resize",draw);connect();
+</script>
+</body></html>
